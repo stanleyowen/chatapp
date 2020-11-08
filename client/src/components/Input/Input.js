@@ -1,5 +1,4 @@
 import React from 'react';
-import InfoBar from '../InfoBar/InfoBar';
 import './Input.css';
 
 const Input = ({ message, setMessage, sendMessage }) => (
@@ -9,7 +8,7 @@ const Input = ({ message, setMessage, sendMessage }) => (
             type="text"
             placeholder="Type your messages here"
             value={message}
-            onChange={(event) => setMessage(event.target.value)}
+            onChange={({target: {value} }) => setMessage(value)}
             onKeyPress={event => event.key === 'Enter' ? sendMessage(event) : null}
         />
         <button className="sendButton" onClick={(event) => sendMessage(event)}>Send</button>
