@@ -13,10 +13,9 @@ let socket;
 const Chat = ({ location }) => {
     const [name, setName] = useState('');
     const [room, setRoom] = useState('');
-    const [users, setUsers] = useState('');
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
-    const ENDPOINT = 'localhost:5000';
+    const ENDPOINT = 'http://localhost:5000/';
 
     useEffect(() => {
         const { name, room } = queryString.parse(location.search);
@@ -29,24 +28,16 @@ const Chat = ({ location }) => {
         socket.emit('join', { name, room }, (error) => {
             if(error) {
                 alert(error);
+                window.location='/';
             }
         });
-
-        return () => {
-            socket.emit('disconnect');
-            socket.off();
-        }
     }, [ENDPOINT, location.search]);
 
     useEffect(() => {
         socket.on('message', message => {
             setMessages(messages => [ ...messages, message ]);
         });
-
-        socket.on('roomData', ({ users }) => {
-            setUsers(users);
-        });
-    }, [messages]);
+    }, []);
 
     const sendMessage = (event) => {
         event.preventDefault();
