@@ -9,12 +9,15 @@ const Join = () => {
     return (
         <div className="joinOuterContainer">
             <div className="joinInnerContainer">
-                <h1 className="heading">Join</h1>
+                <h1 className="heading">Join Room</h1>
                 <div><input placeholder="Initial Name" className="joinInput" type="text" onChange={(event) => setName(event.target.value)} /></div>
                 <div><input placeholder="Room Name" className="joinInput mt-20" type="text" onChange={(event) => setRoom(event.target.value)} /></div>
                 <Link onClick={event => (!name || !room) ? event.preventDefault() : null} to={`/chat?name=${name}&room=${room}`}>
                     <button className="button mt-20" type="submit">Sign in</button>
                 </Link>
+            </div>
+            <div className="footer">
+                <p>&copy; 2020 chatapp-stanley.netlify.app - All Rights Reserved | Created by <a href="http://stanleyowen.atwebpages.com">Stanley Owen</a></p>
             </div>
         </div>
     )
