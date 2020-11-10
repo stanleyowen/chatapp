@@ -52,6 +52,7 @@ html {
     position : fixed;
     bottom : 0px;
     color: white;
+    margin: auto 20px auto 20px;
 }
 a {
     color: #349beb;

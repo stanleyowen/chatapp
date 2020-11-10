@@ -13,6 +13,7 @@ let socket;
 const Chat = ({ location }) => {
     const [name, setName] = useState('');
     const [room, setRoom] = useState('');
+    const [users, setUsers] = useState([]);
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
     const ENDPOINT = 'https://e76c276a8ec4c46e80cec9bd1a3b67.herokuapp.com/';
@@ -37,6 +38,9 @@ const Chat = ({ location }) => {
         socket.on('message', message => {
             setMessages(messages => [ ...messages, message ]);
         });
+        socket.on('roomData', ({ users }) => {
+            setUsers(users);
+        })
     }, []);
 
     const sendMessage = (event) => {
@@ -48,7 +52,7 @@ const Chat = ({ location }) => {
 
     return (
         <div className="container">
-            <InfoBar room={room} />
+            <InfoBar room={room} users={users} />
             <Messages messages={messages} name={name} />
             <Input message={message} setMessage={setMessage} sendMessage={sendMessage} />
         </div>
