@@ -16,5 +16,5 @@ You are **NOT ALLOWED** to remove or change the license of this file
 
 Any problems? Contact Stanley via :
 - Website : <a href="http://stanleyowen.atwebpages.com">stanleyowen.atwebpages.com</a>
-- Email : <a href="mailto:stanleyowen06@gmail.com"stanleyowen06@gmail.com</a>
+- Email : <a href="mailto:stanleyowen06@gmail.com">stanleyowen06@gmail.com</a>
 - Instgaram : <a href="https://instagram.com/stanleyowennn">stanleyowennn</a>
