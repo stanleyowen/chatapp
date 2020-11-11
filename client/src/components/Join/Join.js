@@ -16,9 +16,6 @@ const Join = () => {
                     <button className="button mt-20" type="submit">Sign in</button>
                 </Link>
             </div>
-            <div className="footer">
-                <p>&copy; 2020 chatapp-stanley.netlify.app - All Rights Reserved | Created by <a href="http://stanleyowen.atwebpages.com">Stanley Owen</a></p>
-            </div>
         </div>
     )
 }

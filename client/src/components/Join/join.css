@@ -47,13 +47,6 @@ html {
 .mt-20 {
     margin-top: 20px;
 }
-.footer {
-    margin: 0;
-    position : fixed;
-    bottom : 0px;
-    color: white;
-    margin: auto 20px auto 20px;
-}
 a {
     color: #349beb;
     text-decoration: none;
