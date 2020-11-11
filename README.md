@@ -1,6 +1,5 @@
 # ChatApp by Stanley Owen
-A Realtime Chat Application built using React Js, Node Js, and Socket.io by Stanley Owen\
-You are **NOT ALLOWED** to remove or change the license of this file
+A Realtime Chat Application built using React Js, Node Js, and Socket.io by Stanley Owen
 
 ## Guide / How to Run
 - Download the code, fork, or clone it.
