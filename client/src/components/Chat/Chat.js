@@ -16,7 +16,7 @@ const Chat = ({ location }) => {
     const [users, setUsers] = useState([]);
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
-    const ENDPOINT = 'https://e76c276a8ec4c46e80cec9bd1a3b67.herokuapp.com/';
+    const ENDPOINT = 'https://chatapp-clone-api.herokuapp.com/';
 
     useEffect(() => {
         const { name, room } = queryString.parse(location.search);
