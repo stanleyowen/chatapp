@@ -1,0 +1,15 @@
+{
+  "name": "chatapp",
+  "version": "0.1.2",
+  "description": "Chat Anonymously, without any Privacy and Trackers!",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stanleyowen/chatapp.git"
+  },
+  "author": "Stanley Owen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/stanleyowen/chatapp/issues"
+  },
+  "homepage": "https://github.com/stanleyowen/chatapp#readme"
+}

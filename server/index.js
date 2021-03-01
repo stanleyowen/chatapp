@@ -7,11 +7,19 @@ const PORT = process.env.PORT || 5000;
 
 const { addUser, removeUser, getUser, getUsersInRoom } = require('./users');
 
+require('dotenv').config();
 const router = require('./router');
 
 const app = express();
-const server = http.createServer(app);
-const io = socketio(server);
+const server = http.createServer();
+const io = socketio(server, {
+    cors: {
+        origin: process.env.CORS_ORIGIN,
+        methods: ["GET", "POST"],
+        allowedHeaders: [""],
+        credentials: true
+    }
+});
 
 app.use(cors());
 app.use(router);
