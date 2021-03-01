@@ -13,7 +13,7 @@ const app = express();
 const server = http.createServer();
 const io = socketio(server, {
     cors: {
-        origin: "http://localhost:3000",
+        origin: "https://chatapp-clone.netlify.app", /*To run in local machine, change the origin became 'http://localhost:3000' */
         methods: ["GET", "POST"],
         allowedHeaders: [""],
         credentials: true
