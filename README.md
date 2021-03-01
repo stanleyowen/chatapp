@@ -28,7 +28,19 @@
     - Open your terminal
     - Change directory `cd` to both `client` and `server` folder
     - Type `npm install` in commmand line
-3. Run and Compile it
+3. Create `.env` file
+    - Inside `client` directory, create a new file named `.env` which stores about important information, which is `REACT_APP_ENDPOINT`
+      - `REACT_APP_ENDPOINT` stores the server side URL (ENDPOINT)<br /><br />
+          ```
+          REACT_APP_ENDPOINT = http://localhost:5000/
+          ```
+
+    - Inside `server` directory, create a new file named `.env` which stores about sensitive information, which is `CORS_ORIGIN`
+      - `CORS_ORIGIN` stores which domain is allowed to fetch data<br /><br />
+          ```
+          CORS_ORIGIN = http://localhost:3000
+          ```
+4. Run and Compile it
     - In the `client` directory, type `npm start` in command line
     - In the `server` diireactory, type `nodemon` in command line
 

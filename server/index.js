@@ -7,18 +7,20 @@ const PORT = process.env.PORT || 5000;
 
 const { addUser, removeUser, getUser, getUsersInRoom } = require('./users');
 
+require('dotenv').config();
 const router = require('./router');
 
 const app = express();
 const server = http.createServer();
 const io = socketio(server, {
     cors: {
-        origin: "https://chatapp-clone.netlify.app", /*To run in local machine, change the origin became 'http://localhost:3000' */
+        origin: process.env.CORS_ORIGIN,
         methods: ["GET", "POST"],
         allowedHeaders: [""],
         credentials: true
     }
 });
+
 app.use(cors());
 app.use(router);
 
