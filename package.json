@@ -1,18 +1,18 @@
 {
-  "name": "chatapp",
+  "name": "quietroom",
   "version": "1.0.0",
   "private": true,
-  "description": "Private, end-to-end encrypted chat rooms. No accounts, no history, no trackers.",
+  "description": "Quietroom: private, end-to-end encrypted chat rooms. No accounts, no history, no trackers.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/stanleyowen/chatapp.git"
+    "url": "git+https://github.com/stanleyowen/quietroom.git"
   },
   "author": "Stanley Owen",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/stanleyowen/chatapp/issues"
+    "url": "https://github.com/stanleyowen/quietroom/issues"
   },
-  "homepage": "https://github.com/stanleyowen/chatapp#readme",
+  "homepage": "https://github.com/stanleyowen/quietroom#readme",
   "scripts": {
     "install:all": "npm ci --prefix server && npm ci --prefix client",
     "dev:server": "npm run dev --prefix server",

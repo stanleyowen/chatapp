@@ -1,146 +1,182 @@
-# chatapp
+<div align="center">
 
-> Private, end-to-end encrypted chat rooms. No accounts, no history, no trackers.
+<img src=".github/assets/logo.svg" width="88" height="88" alt="Quietroom logo: a speech bubble with a keyhole">
 
-[![CI](https://github.com/stanleyowen/chatapp/actions/workflows/ci.yml/badge.svg)](https://github.com/stanleyowen/chatapp/actions/workflows/ci.yml)
+# Quietroom
+
+**Private chat rooms that leave no trace.**
+
+End-to-end encrypted in your browser. No accounts, no history, no trackers.
+
+[![CI](https://github.com/stanleyowen/quietroom/actions/workflows/ci.yml/badge.svg)](https://github.com/stanleyowen/quietroom/actions/workflows/ci.yml)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/024685b7-595d-4ecf-85f6-3ed7cf7a9f60/deploy-status)](https://app.netlify.com/sites/chatapp-clone/deploys)
-[![MIT License](https://img.shields.io/github/license/stanleyowen/chatapp?style=flat-square)](LICENSE)
+[![License: MIT](https://img.shields.io/github/license/stanleyowen/quietroom?color=4f5bd5)](LICENSE)
 
-- **End-to-end encrypted.** Messages *and* display names are encrypted in the browser (AES-256-GCM via Web Crypto). The server relays ciphertext it cannot read.
-- **Nothing stored.** No database, no message history, no request logs. When the last person leaves, the room no longer exists anywhere.
-- **No tracking.** No cookies, analytics, web fonts, CDNs, or any third-party request. Enforced by a strict Content-Security-Policy.
-- **Fast.** ~80 KB gzipped total, two runtime dependencies on the client (React) and one on the server (`ws`).
+[**Open Quietroom**](https://chatapp-clone.netlify.app) &nbsp;·&nbsp; [How it works](#how-it-works) &nbsp;·&nbsp; [Security](#security) &nbsp;·&nbsp; [Self-hosting](#self-hosting)
+
+<br>
+
+<img src=".github/assets/screenshot-desktop.png" width="74%" alt="Quietroom on desktop: a private room with two people sharing a Wi-Fi password">&nbsp;&nbsp;<img src=".github/assets/screenshot-mobile.png" width="22%" alt="The same room on a phone in dark mode">
+
+</div>
+
+<br>
+
+## Why Quietroom
+
+Some things shouldn't sit in a chat history forever: a Wi-Fi password, a door code, a quick "can we talk privately?". Quietroom gives you a room for that conversation and then forgets it.
+
+| | |
+| --- | --- |
+| **End-to-end encrypted** | Messages *and* display names are encrypted in your browser with AES-256-GCM. The server relays ciphertext it cannot read. |
+| **Nothing is stored** | No database, no message history, no request logs. When the last person leaves, the room no longer exists anywhere. |
+| **No accounts** | Pick a display name and go. It is kept for that browser tab only. |
+| **No tracking** | No cookies, analytics, web fonts or third-party requests. A strict Content-Security-Policy enforces it. |
+| **Fast and small** | About 82 KB gzipped. The client's only runtime dependency is React, and the server's only one is `ws`. |
+| **Works everywhere** | Phone and desktop, light and dark mode, keyboard and screen-reader friendly, and it reconnects on its own. |
 
 ## How it works
 
+1. **Create a room.** You get an invite link like `https://…/#7kq2m-xv9ph-3dwz8-rb4tn`.
+2. **Share the link.** The part after `#` is the room's secret. Browsers never send it to any server, not even ours.
+3. **Talk.** Your browser turns the secret into an encryption key and a room id. The relay only sees the id and encrypted blobs.
+4. **Leave.** Close the tab and your copy is gone. When everyone has left, so is the room.
+
 ```
-                       URL fragment (#…) – never sent to any server
-                                 │
- Browser  ── room code ──PBKDF2──┴─HKDF──┬─▶ room id ───────────────┐
-                                         └─▶ AES-256-GCM key (stays local)
-                                                                    ▼
- Netlify (static files)            Cloudflare Tunnel ─▶ Node relay (Docker, in-memory only)
-                                   sees: opaque room id, ciphertext, timing
+                     URL fragment (#…) – never leaves the browser
+                                │
+ Browser ── room code ──PBKDF2──┴─HKDF──┬─▶ room id ─────────────────┐
+                                        └─▶ AES-256-GCM key (local)  │
+                                                                     ▼
+ Netlify (static app)        Cloudflare Tunnel ─▶ relay in Docker (memory only)
+                             sees: opaque room id, ciphertext, timing
 ```
 
-- **Create private room** generates a random 100-bit code like `7kq2m-xv9ph-3dwz8-rb4tn`. The invite link is `https://your-site/#<code>`. Because the code lives in the `#fragment`, browsers never send it to Netlify or to the relay.
-- You can also join by typing a **room name** (like the old app). Anyone who guesses that name can join, so the UI warns about it. PBKDF2 (300k iterations) slows guessing down, but use generated codes for anything private.
+You can also join by typing a room *name*, as in the original app. Anyone who guesses that name can get in, so the app warns you. Generated codes carry 100 bits of randomness.
 
-### Threat model (honest version)
+## Security
 
-| The relay server / a network attacker **cannot** | The relay server **can** |
+### What the server can and can't see
+
+| The relay or a network attacker **cannot** | The relay **can** |
 | --- | --- |
-| read messages or display names | see that *some* room exists, how many people are in it, and when they send messages |
-| learn the room code or invite link | see IP addresses of connected clients (kept in memory only, for rate limiting) |
-| forge or modify messages (AES-GCM authenticated; sender id is bound inside the ciphertext) | drop or delay messages |
-| replay a message to someone who already received it (clients de-duplicate) | re-send an old ciphertext to a member who joined later (it would show as new) |
-| impersonate a member inside the encrypted content | serve a malicious client *if* it also controls the Netlify site – E2EE in web apps trusts whoever serves the JS |
+| read messages or display names | see that a room exists, how many people are in it, and when they send messages |
+| learn the room code or invite link | see connecting IP addresses (kept in memory for rate limiting, never logged) |
+| forge or change messages (authenticated encryption, sender bound inside the ciphertext) | drop or delay messages |
+| replay a message to someone who already received it | re-send an old message to someone who joined later |
 
-Anyone holding the invite link is a full member of the room. Treat the link like a password.
+Anyone with the invite link is a full member of the room, so treat it like a password. As with every web app, you trust whoever serves the JavaScript: here, that's the Netlify site built from this repository.
 
-## Project layout
+<details>
+<summary><b>Hardening details</b></summary>
 
-```
-client/   React 19 + Vite 8 + TypeScript 7 single-page app (deploys to Netlify)
-server/   Node.js WebSocket relay; TypeScript run natively by Node, no build step
-shared/   Wire protocol + limits used by both
-deploy/   Dockerfile, docker-compose (relay + Cloudflare Tunnel), deploy script
-```
+**Relay**
+- Strict Origin allow-list on the WebSocket handshake (CORS does not cover WebSockets)
+- Every frame validated against a strict schema; malformed or binary frames close the socket
+- Limits on frame size (16 KB), room size (50), rooms, total and per-IP connections, plus token-bucket rate limiting
+- Join timeout, ping/pong heartbeat, and backpressure, so slow readers get dropped
+- No compression and no persistence
 
-## Local development
+**Container**
+- Runs as uid 10001 with a read-only filesystem, no Linux capabilities, and `no-new-privileges`
+- On an internal Docker network with **no internet access**; only the cloudflared sidecar can reach it
+- No host ports are published; TLS terminates at Cloudflare
+- Base images pinned by digest, package managers removed, dependencies installed with `npm ci --ignore-scripts`
 
-Requires **Node.js 24+** (`nvm use` picks up `.nvmrc` → 26 LTS).
+**Client**
+- CSP `default-src 'none'` with Trusted Types, no inline code, no `eval`, and `connect-src` pinned to the relay
+- Everything renders as text, never HTML; bidi-override and control characters are stripped
+- `Referrer-Policy: no-referrer`, HSTS, and a locked-down `Permissions-Policy`
+
+**Supply chain**
+- Lockfiles and `npm ci` everywhere, `npm audit` and an image smoke test in CI, Dependabot for npm, Docker and Actions
+
+</details>
+
+Found a vulnerability? Please [report it privately](https://github.com/stanleyowen/quietroom/security/advisories/new) rather than opening a public issue.
+
+## Self-hosting
+
+Quietroom has two parts: a static web app and a small WebSocket relay.
+
+### Local development
+
+Requires **Node.js 24+** (`nvm use` picks up `.nvmrc`, which is Node 26 LTS).
 
 ```bash
-npm run install:all     # installs client/ and server/
+npm run install:all     # install client/ and server/
 npm run dev:server      # relay on ws://localhost:8787/ws
 npm run dev:client      # app on http://localhost:5173
-npm run check           # typecheck + lint + tests for both
+npm run check           # typecheck, lint and test both
 ```
 
-> On macOS, avoid port 5000: AirPlay Receiver occupies it and answers `403`.
+> On macOS, keep the relay off port 5000. AirPlay Receiver uses it and answers `403`.
 
-## Deploying
+### Relay: Docker and Cloudflare Tunnel
 
-```
- Browser ──HTTPS──▶ Netlify (static client, chatapp-clone.netlify.app)
-    │
-    └──WSS──▶ Cloudflare edge ──Tunnel──▶ cloudflared ──internal net──▶ relay
-              chat-api.stanleyowen.com    (container)    no internet    (container)
-```
-
-### 1. Relay server (Ubuntu + Docker, via Cloudflare Tunnel)
-
-The relay runs as two containers in `~/server/chatapp` on the Ubuntu box. **No ports are opened on the host.** Traffic only arrives through an outbound Cloudflare Tunnel, and Cloudflare terminates TLS for `chat-api.stanleyowen.com`.
+The relay runs as two containers: the relay itself and a `cloudflared` sidecar that connects out to Cloudflare. Nothing listens on the host.
 
 ```bash
-./deploy/deploy.sh            # tests, rsync over Cloudflare Access SSH, docker compose build + up, health check
+./deploy/deploy.sh                              # default: stanley@192.168.1.100
+./deploy/deploy.sh stanley@ssh.stanleyowen.com  # remotely, via Cloudflare Access
 ```
 
-`deploy.sh` defaults to `stanley@192.168.1.100` over plain SSH on the LAN. Away from home, run `./deploy/deploy.sh stanley@ssh.stanleyowen.com`, which goes through `cloudflared access ssh` automatically. It never needs sudo and never touches the server's `.env`.
+The script runs the tests, copies the source over SSH, rebuilds the image, starts the stack, and checks `https://chat-api.stanleyowen.com/healthz`. It never needs sudo and never touches the server's `.env`.
 
-One-time setup (already done for `chat-api.stanleyowen.com`):
+<details>
+<summary><b>First-time setup on a new server</b></summary>
+
+You need Docker with the compose plugin, rsync, and a Cloudflare-managed domain.
 
 ```bash
-cloudflared tunnel create chatapp-api
-cloudflared tunnel route dns chatapp-api chat-api.stanleyowen.com
-mkdir -m 700 -p ~/server/chatapp && cd ~/server/chatapp
-umask 077 && printf 'ALLOWED_ORIGINS=https://chatapp-clone.netlify.app\nTUNNEL_TOKEN=%s\n' "$(cloudflared tunnel token chatapp-api)" > .env
+cloudflared tunnel create quietroom-api
+cloudflared tunnel route dns quietroom-api chat-api.example.com
+mkdir -m 700 -p ~/server/quietroom && cd ~/server/quietroom
+umask 077 && printf 'ALLOWED_ORIGINS=https://your-site.netlify.app\nTUNNEL_TOKEN=%s\n' \
+  "$(cloudflared tunnel token quietroom-api)" > .env
 ```
 
-To allow another client origin (e.g. a custom domain), edit `ALLOWED_ORIGINS` in `~/server/chatapp/.env` (comma separated) and run `docker compose up -d` there.
+Then run `./deploy/deploy.sh user@your-server` from your machine. To allow another web origin, add it to `ALLOWED_ORIGINS` (comma separated) and run `docker compose up -d` in `~/server/quietroom`.
 
-How the containers are hardened (`deploy/docker-compose.yml`, `deploy/Dockerfile`):
+</details>
 
-| | relay | cloudflared |
-| --- | --- | --- |
-| user | uid 10001, can't write its own code | uid 65532 |
-| filesystem | read-only | read-only |
-| capabilities | none (`cap_drop: ALL`, `no-new-privileges`) | none |
-| network | **internal only: no internet, no DNS** | internal + outbound to Cloudflare |
-| limits | 256 MB RAM, 1 CPU, 64 pids | 256 MB RAM, 64 pids |
-| image | `node:26 alpine` pinned by digest; npm, yarn and corepack removed; built with `npm ci --ignore-scripts` | pinned by digest |
-| logs | startup lines only, capped at 2 × 1 MB | warnings only |
-
-The client IP is read from Cloudflare's `CF-Connecting-IP`, but only when the request comes from a private Docker address. It is used for in-memory per-IP limits only and is never logged.
-
-Operations:
+<details>
+<summary><b>Day-to-day operations</b></summary>
 
 ```bash
-ssh stanley@192.168.1.100      # or, remotely: ssh -o ProxyCommand="cloudflared access ssh --hostname %h" stanley@ssh.stanleyowen.com
-cd ~/server/chatapp
-docker compose ps          # status / health
-docker compose logs -f     # (intentionally almost empty)
+ssh stanley@192.168.1.100
+cd ~/server/quietroom
+docker compose ps            # status and health
+docker compose logs -f       # intentionally almost empty
 docker compose restart relay
 ```
 
-### 2. Client (Netlify)
+</details>
 
-`netlify.toml` builds `client/` with Node 26 and points it at `wss://chat-api.stanleyowen.com/ws`. In the Netlify dashboard, make sure **Base directory is empty**, so the root `netlify.toml` is used. Merge to `master` to deploy.
+### Web app: Netlify
 
-The build emits `dist/_headers` with a CSP that allows connections **only** to the relay origin, plus HSTS, `Referrer-Policy: no-referrer`, a locked-down `Permissions-Policy`, Trusted Types, and immutable caching for hashed assets.
+`netlify.toml` builds `client/` on Node 26, runs lint and tests, and points the app at `wss://chat-api.stanleyowen.com/ws`. Leave **Base directory** empty in the Netlify dashboard so this file is used. The build also writes a `_headers` file containing the CSP and security headers.
 
-## Security hardening summary
+## Built with
 
-**Relay**
-- strict Origin allow-list on the WebSocket handshake (CORS does not protect WebSockets)
-- validates every frame against a strict schema; non-JSON or binary frames close the connection
-- caps: 16 KB frames, 50 members per room, total rooms, connections in total and per IP, and per-socket token-bucket rate limits
-- join timeout, ping/pong heartbeat, and backpressure, so slow readers get dropped instead of eating memory
-- no compression (avoids zip bombs and CPU cost) and no persistence
+| Part | Stack |
+| --- | --- |
+| Client | React 19, Vite 8, TypeScript 7, Web Crypto API, plain CSS |
+| Relay | Node.js 26 (TypeScript run natively), `ws` |
+| Hosting | Netlify (client); Docker and Cloudflare Tunnel (relay) |
+| Tooling | Vitest, oxlint, GitHub Actions, Dependabot |
 
-**Client**
-- CSP `default-src 'none'`, no inline scripts or styles, no `eval`, Trusted Types enforced
-- all rendering goes through React text nodes, never HTML; bidi-override and control characters are stripped from names and messages
-- display names are kept per-tab in `sessionStorage` only; nothing else is stored
-
-**Supply chain**
-- lockfiles plus `npm ci` everywhere; `--ignore-scripts` in the image; base images pinned by digest; Dependabot weekly (npm, Docker, Actions); `npm audit` and an image build in CI
+```
+client/   web app (deploys to Netlify)
+server/   WebSocket relay
+shared/   wire protocol and limits used by both
+deploy/   Dockerfile, docker-compose, and the deploy script
+```
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Found a bug or have an idea? [Open an issue](https://github.com/stanleyowen/chatapp/issues/new/choose).
+Ideas and bug reports are welcome. Please read the [contributing guide](CONTRIBUTING.md) and [code of conduct](CODE_OF_CONDUCT.md), then [open an issue](https://github.com/stanleyowen/quietroom/issues/new/choose).
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) © Stanley Owen
