@@ -44,6 +44,9 @@ function securityHeaders(wsUrl: string): Plugin {
     '/assets/*',
     '  Cache-Control: public, max-age=31536000, immutable',
     '',
+    '/manifest.webmanifest',
+    '  Content-Type: application/manifest+json',
+    '',
   ].join('\n');
 
   return {
