@@ -13,8 +13,13 @@ import { parseClientFrame } from './validate.ts';
 const WS_PATH = '/ws';
 const JOIN_TIMEOUT_MS = 10_000;
 const HEARTBEAT_MS = 30_000;
-/** Drop clients that stop reading (protects server memory). */
-const MAX_BUFFERED_BYTES = 1024 * 1024;
+/**
+ * Drop clients that stop reading (protects server memory). Kept small because
+ * an attacker can hold many non-reading sockets open: at 1 MB each, a few
+ * hundred of them exhausted the 256 MB container. Normal (padded) messages are
+ * a few hundred bytes, so 256 KB still absorbs a long backlog.
+ */
+const MAX_BUFFERED_BYTES = 256 * 1024;
 const RATE_BURST = 20;
 const RATE_PER_SECOND = 5;
 const MAX_RATE_STRIKES = 10;
