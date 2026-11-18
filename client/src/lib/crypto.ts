@@ -12,7 +12,7 @@
 const enc = new TextEncoder();
 const dec = new TextDecoder();
 
-const VERSION = 'chatapp/v1';
+const VERSION = 'quietroom/v1';
 const SALT = enc.encode(`${VERSION}/room-salt`);
 /** Slows down offline guessing of human-chosen room names. */
 const PBKDF2_ITERATIONS = 300_000;
