@@ -9,10 +9,9 @@
 End-to-end encrypted in your browser. No accounts, no history, no trackers.
 
 [![CI](https://github.com/stanleyowen/quietroom/actions/workflows/ci.yml/badge.svg)](https://github.com/stanleyowen/quietroom/actions/workflows/ci.yml)
-[![Netlify Status](https://api.netlify.com/api/v1/badges/024685b7-595d-4ecf-85f6-3ed7cf7a9f60/deploy-status)](https://app.netlify.com/sites/chatapp-clone/deploys)
 [![License: MIT](https://img.shields.io/github/license/stanleyowen/quietroom?color=4f5bd5)](LICENSE)
 
-[**Open Quietroom**](https://chatapp-clone.netlify.app) &nbsp;·&nbsp; [How it works](#how-it-works) &nbsp;·&nbsp; [Security](#security) &nbsp;·&nbsp; [Self-hosting](#self-hosting)
+[**Open Quietroom**](https://chat.stanleyowen.com) &nbsp;·&nbsp; [How it works](#how-it-works) &nbsp;·&nbsp; [Security](#security) &nbsp;·&nbsp; [Self-hosting](#self-hosting)
 
 <br>
 
@@ -155,7 +154,7 @@ docker compose restart relay
 
 ### Web app: Netlify
 
-`netlify.toml` builds `client/` on Node 26, runs lint and tests, and points the app at `wss://chat-api.stanleyowen.com/ws`. Leave **Base directory** empty in the Netlify dashboard so this file is used. The build also writes a `_headers` file containing the CSP and security headers.
+The app is served from **[chat.stanleyowen.com](https://chat.stanleyowen.com)** (Netlify site `quietchat`, with a Cloudflare DNS record pointing at it). `netlify.toml` builds `client/` on Node 26, runs lint and tests, and points the app at `wss://chat-api.stanleyowen.com/ws`. Leave **Base directory** empty in the Netlify dashboard so this file is used. The build also writes a `_headers` file containing the CSP and security headers.
 
 ## Built with
 
@@ -163,7 +162,7 @@ docker compose restart relay
 | --- | --- |
 | Client | React 19, Vite 8, TypeScript 7, Web Crypto API, plain CSS |
 | Relay | Node.js 26 (TypeScript run natively), `ws` |
-| Hosting | Netlify (client); Docker and Cloudflare Tunnel (relay) |
+| Hosting | Netlify at chat.stanleyowen.com (client); Docker and Cloudflare Tunnel at chat-api.stanleyowen.com (relay) |
 | Tooling | Vitest, oxlint, GitHub Actions, Dependabot |
 
 ```
