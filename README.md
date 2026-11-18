@@ -9,6 +9,7 @@
 End-to-end encrypted in your browser. No accounts, no history, no trackers.
 
 [![CI](https://github.com/stanleyowen/quietroom/actions/workflows/ci.yml/badge.svg)](https://github.com/stanleyowen/quietroom/actions/workflows/ci.yml)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/4b98656a-2758-4743-b90c-ba76952e8cae/deploy-status)](https://app.netlify.com/projects/quietchat/deploys)
 [![License: MIT](https://img.shields.io/github/license/stanleyowen/quietroom?color=4f5bd5)](LICENSE)
 
 [**Open Quietroom**](https://chat.stanleyowen.com) &nbsp;·&nbsp; [How it works](#how-it-works) &nbsp;·&nbsp; [Security](#security) &nbsp;·&nbsp; [Self-hosting](#self-hosting)
