@@ -23,6 +23,14 @@ const MAX_BUFFERED_BYTES = 256 * 1024;
 const RATE_BURST = 20;
 const RATE_PER_SECOND = 5;
 const MAX_RATE_STRIKES = 10;
+/**
+ * Ciphertext budget shared by every connection from one client address (IPv6:
+ * one /64). Each message fans out to up to 49 others, so without this a single
+ * host could make the relay push ~60 MB/s of outbound traffic. Normal chat
+ * uses a tiny fraction of it.
+ */
+const IP_MSG_BURST_BYTES = 256 * 1024;
+const IP_MSG_BYTES_PER_SECOND = 32 * 1024;
 
 const SECURITY_HEADERS: Record<string, string> = {
   'Cache-Control': 'no-store',
@@ -46,6 +54,7 @@ export interface ChatServer {
 export function createChatServer(config: Config): ChatServer {
   const hub = new Hub({ maxRooms: config.maxRooms });
   const connectionsPerIp = new Map<string, number>();
+  const ipBudgets = new Map<string, { bucket: TokenBucket; refs: number }>();
   const heartbeats = new Map<WebSocket, () => void>();
   let connections = 0;
 
@@ -93,17 +102,24 @@ export function createChatServer(config: Config): ChatServer {
     wss.handleUpgrade(req, socket, head, (ws) => {
       connections++;
       connectionsPerIp.set(ip, (connectionsPerIp.get(ip) ?? 0) + 1);
+      const budget = ipBudgets.get(ip) ?? {
+        bucket: new TokenBucket(IP_MSG_BURST_BYTES, IP_MSG_BYTES_PER_SECOND),
+        refs: 0,
+      };
+      ipBudgets.set(ip, budget);
+      budget.refs++;
       ws.once('close', () => {
         connections--;
         const n = (connectionsPerIp.get(ip) ?? 1) - 1;
         if (n <= 0) connectionsPerIp.delete(ip);
         else connectionsPerIp.set(ip, n);
+        if (--budget.refs <= 0) ipBudgets.delete(ip);
       });
-      onConnection(ws);
+      onConnection(ws, budget.bucket);
     });
   });
 
-  function onConnection(ws: WebSocket): void {
+  function onConnection(ws: WebSocket, ipBucket: TokenBucket): void {
     const peer: Peer = {
       id: randomBytes(12).toString('base64url'),
       send(s) {
@@ -137,17 +153,19 @@ export function createChatServer(config: Config): ChatServer {
       ws.ping();
     });
 
+    const rateLimited = (): void => {
+      if (++strikes > MAX_RATE_STRIKES) return fail('rate_limited', CLOSE.rateLimited);
+      send(peer, { t: 'error', code: 'rate_limited', fatal: false });
+    };
+
     ws.on('message', (data, isBinary) => {
       try {
         if (isBinary) return fail('bad_request', CLOSE.policy);
-
-        if (!bucket.take()) {
-          if (++strikes > MAX_RATE_STRIKES) return fail('rate_limited', CLOSE.rateLimited);
-          return send(peer, { t: 'error', code: 'rate_limited', fatal: false });
-        }
+        if (!bucket.take()) return rateLimited();
 
         const frame = parseClientFrame(data.toString());
         if (!frame) return fail('bad_request', CLOSE.policy);
+        if (frame.t === 'msg' && !ipBucket.take(frame.data.length)) return rateLimited();
 
         let err: ErrorCode | null;
         switch (frame.t) {
