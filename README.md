@@ -73,7 +73,7 @@ Anyone with the invite link is a full member of the room, so treat it like a pas
 **Relay**
 - Strict Origin allow-list on the WebSocket handshake (CORS does not cover WebSockets)
 - Every frame validated against a strict schema; malformed or binary frames close the socket
-- Limits on frame size (16 KB), room size (50), rooms, total and per-IP connections, plus token-bucket rate limiting
+- Limits on frame size (16 KB), room size (50), rooms, total and per-IP connections (IPv6 grouped by /64), plus token-bucket rate limiting per connection and a shared per-IP ciphertext budget
 - Join timeout, ping/pong heartbeat, and backpressure, so slow readers get dropped
 - No compression and no persistence
 

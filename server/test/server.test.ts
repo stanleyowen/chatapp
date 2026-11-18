@@ -2,7 +2,7 @@ import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 
-import { CLOSE, type ServerFrame } from '../../shared/protocol.ts';
+import { CLOSE, LIMITS, type ServerFrame } from '../../shared/protocol.ts';
 import { loadConfig } from '../src/config.ts';
 import { createChatServer, type ChatServer } from '../src/server.ts';
 
@@ -122,6 +122,30 @@ describe('websocket', () => {
     await c.next();
     for (let i = 0; i < 60; i++) c.ws.send('{"t":"typing"}');
     expect(await c.closed).toBe(CLOSE.rateLimited);
+  });
+
+  it('shares one ciphertext budget across all connections from an IP (fan-out amplification)', async () => {
+    const room = 'e'.repeat(64);
+    const [a, b] = await Promise.all([connect(), connect()]);
+    for (const c of [a, b]) {
+      c.ws.send(JSON.stringify({ t: 'join', room, profile: 'cA' }));
+      expect((await c.next()).t).toBe('welcome');
+    }
+    expect((await a.next()).t).toBe('joined'); // b arrived
+
+    // 30 max-size messages (360 KB) exceed the 256 KB per-IP burst even though
+    // each connection stays well inside its own per-connection rate limit.
+    const big = JSON.stringify({ t: 'msg', cid: 'x', data: 'A'.repeat(LIMITS.maxCiphertextChars) });
+    for (let i = 0; i < 15; i++) a.ws.send(big);
+    for (let i = 0; i < 15; i++) b.ws.send(big);
+
+    let f: ServerFrame;
+    do f = await b.next();
+    while (f.t === 'msg');
+    expect(f).toEqual({ t: 'error', code: 'rate_limited', fatal: false });
+
+    for (const c of [a, b]) c.ws.close();
+    await Promise.all([a.closed, b.closed]);
   });
 
   it('caps connections per IP', async () => {

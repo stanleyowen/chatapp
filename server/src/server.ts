@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import http from 'node:http';
+import { isIPv6 } from 'node:net';
 import type { Duplex } from 'node:stream';
 import { WebSocketServer, type WebSocket } from 'ws';
 
@@ -12,11 +13,24 @@ import { parseClientFrame } from './validate.ts';
 const WS_PATH = '/ws';
 const JOIN_TIMEOUT_MS = 10_000;
 const HEARTBEAT_MS = 30_000;
-/** Drop clients that stop reading (protects server memory). */
-const MAX_BUFFERED_BYTES = 1024 * 1024;
+/**
+ * Drop clients that stop reading (protects server memory). Kept small because
+ * an attacker can hold many non-reading sockets open: at 1 MB each, a few
+ * hundred of them exhausted the 256 MB container. Normal (padded) messages are
+ * a few hundred bytes, so 256 KB still absorbs a long backlog.
+ */
+const MAX_BUFFERED_BYTES = 256 * 1024;
 const RATE_BURST = 20;
 const RATE_PER_SECOND = 5;
 const MAX_RATE_STRIKES = 10;
+/**
+ * Ciphertext budget shared by every connection from one client address (IPv6:
+ * one /64). Each message fans out to up to 49 others, so without this a single
+ * host could make the relay push ~60 MB/s of outbound traffic. Normal chat
+ * uses a tiny fraction of it.
+ */
+const IP_MSG_BURST_BYTES = 256 * 1024;
+const IP_MSG_BYTES_PER_SECOND = 32 * 1024;
 
 const SECURITY_HEADERS: Record<string, string> = {
   'Cache-Control': 'no-store',
@@ -40,6 +54,7 @@ export interface ChatServer {
 export function createChatServer(config: Config): ChatServer {
   const hub = new Hub({ maxRooms: config.maxRooms });
   const connectionsPerIp = new Map<string, number>();
+  const ipBudgets = new Map<string, { bucket: TokenBucket; refs: number }>();
   const heartbeats = new Map<WebSocket, () => void>();
   let connections = 0;
 
@@ -78,7 +93,7 @@ export function createChatServer(config: Config): ChatServer {
     const origin = req.headers.origin;
     if (!origin || !config.allowedOrigins.has(origin)) return reject(socket, 403, 'Forbidden');
 
-    const ip = clientIp(req, config);
+    const ip = limitKey(clientIp(req, config));
     if (connections >= config.maxConnections) return reject(socket, 503, 'Service Unavailable');
     if ((connectionsPerIp.get(ip) ?? 0) >= config.maxConnectionsPerIp) {
       return reject(socket, 429, 'Too Many Requests');
@@ -87,17 +102,24 @@ export function createChatServer(config: Config): ChatServer {
     wss.handleUpgrade(req, socket, head, (ws) => {
       connections++;
       connectionsPerIp.set(ip, (connectionsPerIp.get(ip) ?? 0) + 1);
+      const budget = ipBudgets.get(ip) ?? {
+        bucket: new TokenBucket(IP_MSG_BURST_BYTES, IP_MSG_BYTES_PER_SECOND),
+        refs: 0,
+      };
+      ipBudgets.set(ip, budget);
+      budget.refs++;
       ws.once('close', () => {
         connections--;
         const n = (connectionsPerIp.get(ip) ?? 1) - 1;
         if (n <= 0) connectionsPerIp.delete(ip);
         else connectionsPerIp.set(ip, n);
+        if (--budget.refs <= 0) ipBudgets.delete(ip);
       });
-      onConnection(ws);
+      onConnection(ws, budget.bucket);
     });
   });
 
-  function onConnection(ws: WebSocket): void {
+  function onConnection(ws: WebSocket, ipBucket: TokenBucket): void {
     const peer: Peer = {
       id: randomBytes(12).toString('base64url'),
       send(s) {
@@ -131,17 +153,19 @@ export function createChatServer(config: Config): ChatServer {
       ws.ping();
     });
 
+    const rateLimited = (): void => {
+      if (++strikes > MAX_RATE_STRIKES) return fail('rate_limited', CLOSE.rateLimited);
+      send(peer, { t: 'error', code: 'rate_limited', fatal: false });
+    };
+
     ws.on('message', (data, isBinary) => {
       try {
         if (isBinary) return fail('bad_request', CLOSE.policy);
-
-        if (!bucket.take()) {
-          if (++strikes > MAX_RATE_STRIKES) return fail('rate_limited', CLOSE.rateLimited);
-          return send(peer, { t: 'error', code: 'rate_limited', fatal: false });
-        }
+        if (!bucket.take()) return rateLimited();
 
         const frame = parseClientFrame(data.toString());
         if (!frame) return fail('bad_request', CLOSE.policy);
+        if (frame.t === 'msg' && !ipBucket.take(frame.data.length)) return rateLimited();
 
         let err: ErrorCode | null;
         switch (frame.t) {
@@ -213,6 +237,26 @@ export function clientIp(req: http.IncomingMessage, config: Pick<Config, 'trustP
 }
 
 const unmap = (addr: string) => (addr.startsWith('::ffff:') ? addr.slice(7) : addr);
+
+/**
+ * Key used for per-client limits. IPv4 addresses are used as-is, but an IPv6
+ * client usually controls a whole /64 (2^64 addresses), so keying on the full
+ * address would let one host bypass every per-IP limit by rotating addresses.
+ */
+export function limitKey(addr: string): string {
+  const a = unmap(addr.trim().toLowerCase()).split('%')[0]!;
+  if (!isIPv6(a)) return a;
+  const [head = '', tail] = a.split('::');
+  const h = head ? head.split(':') : [];
+  const t = tail ? tail.split(':') : [];
+  // A trailing dotted IPv4 (e.g. 64:ff9b::1.2.3.4) occupies two groups.
+  const width = (g: string[]) => g.reduce((n, x) => n + (x.includes('.') ? 2 : 1), 0);
+  const groups = [...h, ...Array<string>(Math.max(0, 8 - width(h) - width(t))).fill('0'), ...t];
+  return `${groups
+    .slice(0, 4)
+    .map((g) => parseInt(g, 16).toString(16))
+    .join(':')}::/64`;
+}
 
 export function isLoopback(addr: string): boolean {
   const a = unmap(addr);
