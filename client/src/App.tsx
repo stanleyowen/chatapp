@@ -6,7 +6,7 @@ import { roomFromHash } from './lib/room';
 import { cleanName } from './lib/text';
 
 // Per-tab only: survives a refresh, gone when the tab closes.
-const NAME_KEY = 'chatapp:name';
+const NAME_KEY = 'quietroom:name';
 function readName(): string {
   try {
     return cleanName(sessionStorage.getItem(NAME_KEY) ?? '');

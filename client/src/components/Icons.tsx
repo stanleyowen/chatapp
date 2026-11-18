@@ -110,17 +110,15 @@ export const CopyIcon = icon(
   </>,
 );
 
+/** Quietroom mark: a speech bubble with a keyhole – the room only opens with its link. */
 export function Logo({ size = 28 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <rect width="32" height="32" rx="9" fill="var(--accent)" />
-      <path
-        d="M9 10.5A2.5 2.5 0 0 1 11.5 8h9A2.5 2.5 0 0 1 23 10.5v7a2.5 2.5 0 0 1-2.5 2.5H15l-4.2 3.4c-.5.4-1.3 0-1.3-.6V20A2.5 2.5 0 0 1 9 17.5z"
-        fill="var(--accent-contrast)"
-      />
-      <circle cx="13" cy="14" r="1.3" fill="var(--accent)" />
-      <circle cx="16" cy="14" r="1.3" fill="var(--accent)" />
-      <circle cx="19" cy="14" r="1.3" fill="var(--accent)" />
+    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <rect width="64" height="64" rx="16" fill="var(--accent)" />
+      <rect x="9" y="12" width="46" height="33" rx="10" fill="var(--accent-contrast)" />
+      <path d="M13 37V53l12-9.5z" fill="var(--accent-contrast)" />
+      <circle cx="32" cy="24.5" r="5" fill="var(--accent)" />
+      <path d="M29.6 26 28 37.5h8L34.4 26z" fill="var(--accent)" />
     </svg>
   );
 }

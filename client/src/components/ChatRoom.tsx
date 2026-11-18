@@ -224,7 +224,7 @@ function typingLabel(names: string[]): string {
   return 'Several people are typing…';
 }
 
-/** Show "(3) chatapp" in the tab title while the tab is hidden. */
+/** Show "(3) quietroom" in the tab title while the tab is hidden. */
 function useUnreadTitle(theirCount: number) {
   const baseline = useRef(theirCount);
   useEffect(() => {

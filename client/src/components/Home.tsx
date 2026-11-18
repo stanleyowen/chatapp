@@ -54,7 +54,7 @@ export function Home({ initialName, invitedRoom, onJoin, onDismissInvite }: Prop
       <main className="home-inner">
         <div className="brand">
           <Logo />
-          <span>chatapp</span>
+          <span>quietroom</span>
         </div>
 
         <h1 className="home-title">
@@ -171,7 +171,7 @@ export function Home({ initialName, invitedRoom, onJoin, onDismissInvite }: Prop
       </main>
 
       <footer className="home-footer">
-        <a href="https://github.com/stanleyowen/chatapp" target="_blank" rel="noopener noreferrer">
+        <a href="https://github.com/stanleyowen/quietroom" target="_blank" rel="noopener noreferrer">
           Open source on GitHub
         </a>
       </footer>
