@@ -1,0 +1,15 @@
+# Netlify builds the static client from client/. Security headers (incl. a CSP
+# pinned to your relay's origin) are generated into dist/_headers at build time.
+#
+# VITE_WS_URL is public (it ends up in the JS bundle and the CSP), so it lives
+# here rather than in the Netlify UI.
+
+[build]
+  base = "client"
+  command = "npm run lint && npm test && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "26"
+  VITE_WS_URL = "wss://chat-api.stanleyowen.com/ws"
+  NPM_FLAGS = "--no-audit --no-fund"
