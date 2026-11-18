@@ -1,0 +1,5 @@
+{
+  "name": "chatapp-shared",
+  "private": true,
+  "type": "module"
+}
