@@ -1,0 +1,63 @@
+# Quietroom relay on the Ubuntu server (~/server/quietroom).
+#   - No host ports. The only way in is the Cloudflare Tunnel (cloudflared sidecar),
+#     which terminates TLS for chat-api.stanleyowen.com.
+#   - The relay sits on an internal-only network: it cannot reach the internet.
+#   - Secrets live in ./.env (chmod 600), never in the image or the repo.
+name: quietroom
+
+services:
+  relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: quietroom-relay:latest
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8787"
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?set ALLOWED_ORIGINS in .env}
+      # Only cloudflared (private Docker network) can reach the relay, so its
+      # CF-Connecting-IP header is trusted for per-IP limits. Never logged.
+      TRUST_PROXY: private
+      CLIENT_IP_HEADER: cf-connecting-ip
+      MAX_CONNECTIONS: ${MAX_CONNECTIONS:-5000}
+      MAX_CONNECTIONS_PER_IP: ${MAX_CONNECTIONS_PER_IP:-20}
+      MAX_ROOMS: ${MAX_ROOMS:-10000}
+    networks: [internal]
+    user: "10001:10001"
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    cpus: 1
+    pids_limit: 64
+    ulimits:
+      nofile: { soft: 16384, hard: 16384 }
+    logging:
+      driver: json-file
+      options: { max-size: "1m", max-file: "2" }
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.11.1@sha256:e613aadbc2d9511785d2e67a86b0c8ac18dd63a3f9af0d06faf04cbfdcb35f2d
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --loglevel warn run --url http://relay:8787
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env}
+    depends_on:
+      relay:
+        condition: service_healthy
+    networks: [internal, egress]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    pids_limit: 64
+    logging:
+      driver: json-file
+      options: { max-size: "1m", max-file: "2" }
+
+networks:
+  internal:
+    internal: true # no route to the outside world
+  egress: {} # cloudflared only: outbound to Cloudflare's edge
