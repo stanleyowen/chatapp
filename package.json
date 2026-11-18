@@ -1,7 +1,8 @@
 {
   "name": "chatapp",
-  "version": "0.1.2",
-  "description": "Chat Anonymously, without any Privacy and Trackers!",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Private, end-to-end encrypted chat rooms. No accounts, no history, no trackers.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/stanleyowen/chatapp.git"
@@ -11,5 +12,11 @@
   "bugs": {
     "url": "https://github.com/stanleyowen/chatapp/issues"
   },
-  "homepage": "https://github.com/stanleyowen/chatapp#readme"
+  "homepage": "https://github.com/stanleyowen/chatapp#readme",
+  "scripts": {
+    "install:all": "npm ci --prefix server && npm ci --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "check": "npm run typecheck --prefix server && npm test --prefix server && npm run lint --prefix client && npm test --prefix client && npm run typecheck --prefix client"
+  }
 }
