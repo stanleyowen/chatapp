@@ -1,16 +1,16 @@
-# chatapp relay on the Ubuntu server (~/server/chatapp).
+# Quietroom relay on the Ubuntu server (~/server/quietroom).
 #   - No host ports. The only way in is the Cloudflare Tunnel (cloudflared sidecar),
 #     which terminates TLS for chat-api.stanleyowen.com.
 #   - The relay sits on an internal-only network: it cannot reach the internet.
 #   - Secrets live in ./.env (chmod 600), never in the image or the repo.
-name: chatapp
+name: quietroom
 
 services:
   relay:
     build:
       context: .
       dockerfile: Dockerfile
-    image: chatapp-relay:latest
+    image: quietroom-relay:latest
     restart: unless-stopped
     environment:
       HOST: 0.0.0.0

@@ -6,7 +6,7 @@ const chat = createChatServer(config);
 
 chat.server.listen(config.port, config.host, () => {
   // Deliberately no request/IP/room logging – the server keeps no record of who talked.
-  console.log(`chatapp server listening on ${config.host}:${config.port}`);
+  console.log(`quietroom relay listening on ${config.host}:${config.port}`);
   console.log(`allowed origins: ${[...config.allowedOrigins].join(', ')}`);
 });
 

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# chatapp relay – minimal, non-root, read-only image.
+# Quietroom relay – minimal, non-root, read-only image.
 # Build context: repo root (or the deploy dir on the server, same layout).
 
 ARG NODE_IMAGE=node:26.13.1-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5
@@ -13,8 +13,8 @@ RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund \
 
 # ---- runtime
 FROM ${NODE_IMAGE}
-LABEL org.opencontainers.image.title="chatapp-relay" \
-      org.opencontainers.image.source="https://github.com/stanleyowen/chatapp"
+LABEL org.opencontainers.image.title="quietroom-relay" \
+      org.opencontainers.image.source="https://github.com/stanleyowen/quietroom"
 ENV NODE_ENV=production
 # Patch OS packages, then remove package managers the app never needs at runtime.
 RUN apk upgrade --no-cache \

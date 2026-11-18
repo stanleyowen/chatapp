@@ -60,10 +60,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - run: docker build -f deploy/Dockerfile -t chatapp-relay:ci .
+      - run: docker build -f deploy/Dockerfile -t quietroom-relay:ci .
       - name: Smoke test (hardened flags)
         run: |
           docker run -d --name relay --read-only --cap-drop ALL --security-opt no-new-privileges:true \
-            -e HOST=0.0.0.0 -e ALLOWED_ORIGINS=https://ci.example -p 127.0.0.1:8787:8787 chatapp-relay:ci
+            -e HOST=0.0.0.0 -e ALLOWED_ORIGINS=https://ci.example -p 127.0.0.1:8787:8787 quietroom-relay:ci
           for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8787/healthz && exit 0; sleep 1; done
           docker logs relay; exit 1

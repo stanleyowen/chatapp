@@ -1,8 +1,8 @@
 {
-  "name": "chatapp-server",
+  "name": "quietroom-server",
   "version": "1.0.0",
   "private": true,
-  "description": "Zero-knowledge WebSocket relay for Chat App",
+  "description": "Zero-knowledge WebSocket relay for Quietroom",
   "license": "MIT",
   "type": "module",
   "engines": {

@@ -6,12 +6,12 @@
 #
 # SSH goes through `cloudflared access ssh` automatically for ssh.stanleyowen.com
 # (or force it with USE_CLOUDFLARED=1 / disable with USE_CLOUDFLARED=0).
-# The server needs: docker + compose plugin, rsync, and ~/server/chatapp/.env
+# The server needs: docker + compose plugin, rsync, and ~/server/quietroom/.env
 # (see deploy/.env.example). Nothing here needs sudo.
 set -euo pipefail
 
 TARGET="${1:-stanley@192.168.1.100}"
-APP_DIR="${APP_DIR:-server/chatapp}" # relative to the remote home directory
+APP_DIR="${APP_DIR:-server/quietroom}" # relative to the remote home directory
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 SSH=(ssh -o ServerAliveInterval=30)
@@ -58,7 +58,7 @@ chmod 600 .env
 docker compose build --pull --quiet
 docker compose up -d --remove-orphans --wait --wait-timeout 90
 docker compose ps --format 'table {{.Service}}\t{{.Status}}'
-docker image prune -f --filter label=org.opencontainers.image.title=chatapp-relay >/dev/null
+docker image prune -f --filter label=org.opencontainers.image.title=quietroom-relay >/dev/null
 REMOTE
 
 echo "==> Public health check"
