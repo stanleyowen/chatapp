@@ -4,7 +4,7 @@ import { LIMITS, type ServerFrame } from '../../shared/protocol.ts';
 import { loadConfig } from '../src/config.ts';
 import { Hub, type Peer } from '../src/hub.ts';
 import { TokenBucket } from '../src/rateLimit.ts';
-import { clientIp, isLoopback, isPrivate } from '../src/server.ts';
+import { clientIp, isLoopback, isPrivate, limitKey } from '../src/server.ts';
 import { parseClientFrame } from '../src/validate.ts';
 
 const ROOM = 'a'.repeat(64);
@@ -131,6 +131,21 @@ describe('client IP behind a proxy', () => {
     expect(clientIp(req('172.18.0.3', cf), { ...priv, trustProxy: 'loopback' })).toBe('172.18.0.3');
     expect(clientIp(req('127.0.0.1', cf), { ...priv, trustProxy: 'none' })).toBe('127.0.0.1');
     expect(clientIp(req('172.18.0.3'), priv)).toBe('172.18.0.3'); // header missing
+  });
+
+  it('groups IPv6 clients by /64 so address rotation cannot bypass per-IP limits', () => {
+    expect(limitKey('203.0.113.9')).toBe('203.0.113.9');
+    expect(limitKey('::ffff:203.0.113.9')).toBe('203.0.113.9');
+    const key = '2001:db8:abcd:12::/64';
+    expect(limitKey('2001:db8:abcd:12::1')).toBe(key);
+    expect(limitKey('2001:0DB8:abcd:0012:ffff:1:2:3')).toBe(key);
+    expect(limitKey('2001:db8:abcd:12:dead:beef::')).toBe(key);
+    expect(limitKey('2001:db8:abcd:13::1')).not.toBe(key);
+    expect(limitKey('2001:db8::1')).toBe('2001:db8:0:0::/64');
+    expect(limitKey('fe80::1%eth0')).toBe('fe80:0:0:0::/64');
+    expect(limitKey('64:ff9b::192.0.2.1')).toBe('64:ff9b:0:0::/64');
+    expect(limitKey('::1')).toBe('0:0:0:0::/64');
+    expect(limitKey('unknown')).toBe('unknown');
   });
 
   it('parses TRUST_PROXY / CLIENT_IP_HEADER strictly', () => {

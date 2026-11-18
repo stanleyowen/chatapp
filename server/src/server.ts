@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import http from 'node:http';
+import { isIPv6 } from 'node:net';
 import type { Duplex } from 'node:stream';
 import { WebSocketServer, type WebSocket } from 'ws';
 
@@ -78,7 +79,7 @@ export function createChatServer(config: Config): ChatServer {
     const origin = req.headers.origin;
     if (!origin || !config.allowedOrigins.has(origin)) return reject(socket, 403, 'Forbidden');
 
-    const ip = clientIp(req, config);
+    const ip = limitKey(clientIp(req, config));
     if (connections >= config.maxConnections) return reject(socket, 503, 'Service Unavailable');
     if ((connectionsPerIp.get(ip) ?? 0) >= config.maxConnectionsPerIp) {
       return reject(socket, 429, 'Too Many Requests');
@@ -213,6 +214,26 @@ export function clientIp(req: http.IncomingMessage, config: Pick<Config, 'trustP
 }
 
 const unmap = (addr: string) => (addr.startsWith('::ffff:') ? addr.slice(7) : addr);
+
+/**
+ * Key used for per-client limits. IPv4 addresses are used as-is, but an IPv6
+ * client usually controls a whole /64 (2^64 addresses), so keying on the full
+ * address would let one host bypass every per-IP limit by rotating addresses.
+ */
+export function limitKey(addr: string): string {
+  const a = unmap(addr.trim().toLowerCase()).split('%')[0]!;
+  if (!isIPv6(a)) return a;
+  const [head = '', tail] = a.split('::');
+  const h = head ? head.split(':') : [];
+  const t = tail ? tail.split(':') : [];
+  // A trailing dotted IPv4 (e.g. 64:ff9b::1.2.3.4) occupies two groups.
+  const width = (g: string[]) => g.reduce((n, x) => n + (x.includes('.') ? 2 : 1), 0);
+  const groups = [...h, ...Array<string>(Math.max(0, 8 - width(h) - width(t))).fill('0'), ...t];
+  return `${groups
+    .slice(0, 4)
+    .map((g) => parseInt(g, 16).toString(16))
+    .join(':')}::/64`;
+}
 
 export function isLoopback(addr: string): boolean {
   const a = unmap(addr);
