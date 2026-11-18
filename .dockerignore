@@ -1,0 +1,6 @@
+# Build context is allow-listed: only the relay source goes into the image.
+*
+!server/package.json
+!server/package-lock.json
+!server/src/**
+!shared/**
